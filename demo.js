@@ -7,6 +7,7 @@ const RenderStack = require('tre-render-stack')
 const Finder = require('tre-finder')
 const MultiEditor = require('.')
 const computed = require('mutant/computed')
+require('brace/theme/solarized_dark')
 
 const Images = require('tre-images')
 const Fonts = require('tre-fonts')
@@ -55,7 +56,11 @@ client( (err, ssb, config) => {
       return kv && kv.meta && kv.meta["prototype-chain"] ? h('i', '(has proto)') : []
     }
   })
-  const renderMultiEditor = MultiEditor(ssb, config)
+  const renderMultiEditor = MultiEditor(ssb, config, {
+    ace: {
+      theme: 'ace/theme/solarized_dark',
+    }
+  })
 
   document.body.appendChild(h('.tre-multi-editor-demo', [
     makeSplitPane({horiz: true}, [

@@ -1,5 +1,6 @@
 const PropertySheet = require('tre-property-sheet')
 const Shell = require('tre-editor-shell')
+const JsonEditor = require('tre-json-editor')
 const WatchMerged = require('tre-prototypes')
 //const WatchHeads = require('tre-watch-heads')
 const {makePane, makeDivider, makeSplitPane} = require('tre-split-pane')
@@ -13,6 +14,13 @@ module.exports = function(ssb, config, opts) {
   styles()
 
   const watchMerged = WatchMerged(ssb)
+  const renderJsonEditor = JsonEditor(ssb, Object.assign({
+    ace: {
+      tabSize: 2,
+      useSoftTabs: true
+    }
+  }, opts))
+
   //const watchHeads = WatchHeads(ssb)
   const renderPropertySheet = PropertySheet()
   const renderShell = Shell(ssb, {
@@ -26,12 +34,13 @@ module.exports = function(ssb, config, opts) {
 
   return function(kv, ctx) {
     ctx = ctx || {}
-    const {render} = ctx
+    const renderSpecialized = ctx.render
     if (!content(kv)) return
 
     const whereObs = ctx.whereObs || Value(ctx.where || 'editor')
     const contentObs = Value(kv && unmergeKv(kv).value.content)
     const previewObs = getPreviewObs(contentObs)
+    const syntaxErrorObs = Value()
   
     return h('.tre-multieditor', opts, [
       makeSplitPane({horiz: true}, [
@@ -49,7 +58,7 @@ module.exports = function(ssb, config, opts) {
       //const mergedKvObs = watchMerged(kvObs)
       return computed(whereObs, where => {
         if (where.includes('editor')) return []
-        return render(kv, {where, previewObs})
+        return renderSpecialized(kv, {where, previewObs})
       })
     }
 
@@ -64,17 +73,34 @@ module.exports = function(ssb, config, opts) {
       ]
     }
 
+    function renderSpecializedAndJsonEditors(kv, ctx) {
+      return [
+        h('.tre-multieditor-mode.specialized', {
+          classList: computed(whereObs, where => where == 'json-editor' ? [] : ['active'])
+        }, [
+          renderSpecialized(kv, ctx)
+        ]),
+        h('.tre-multieditor-mode.json', {
+          classList: computed(whereObs, where => where == 'json-editor' ? ['active'] : []),
+        }, [
+          renderJsonEditor(kv, ctx)
+        ])
+      ]
+    }
+
     function shell() {
       return renderShell(kv, {
-        renderEditor: render,
+        renderEditor: renderSpecializedAndJsonEditors,
         contentObs,
         previewObs,
+        syntaxErrorObs,
         where: 'editor'
       })
     }
 
     function sheet() {
       return renderPropertySheet(kv, {
+        disabled: computed(syntaxErrorObs, e => !!e),
         contentObs,
         previewObs
       })
@@ -102,8 +128,9 @@ function renderBar(where) {
         where.set(e.target.value)
       }
     }, [
-      h('option', 'editor'),
       h('option', 'stage'),
+      h('option', { selected: true },'editor'),
+      h('option', 'json-editor'),
       h('option', 'thumbnail')
     ])
   ])
