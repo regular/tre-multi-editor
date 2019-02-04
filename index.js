@@ -9,7 +9,7 @@ const Value = require('mutant/value')
 const computed = require('mutant/computed')
 const setStyle = require('module-styles')('tre-multi-editor')
 
-module.exports = function(ssb, config, opts) {
+module.exports = function(ssb, opts) {
   opts = opts || {}
   styles()
 
@@ -42,7 +42,7 @@ module.exports = function(ssb, config, opts) {
     const previewObs = getPreviewObs(contentObs)
     const syntaxErrorObs = Value()
   
-    return h('.tre-multieditor', opts, [
+    return h('.tre-multieditor', [
       makeSplitPane({horiz: true}, [
         makePane('60%', [
           renderBar(whereObs),

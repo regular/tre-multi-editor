@@ -56,7 +56,7 @@ client( (err, ssb, config) => {
       return kv && kv.meta && kv.meta["prototype-chain"] ? h('i', '(has proto)') : []
     }
   })
-  const renderMultiEditor = MultiEditor(ssb, config, {
+  const renderMultiEditor = MultiEditor(ssb, {
     ace: {
       theme: 'ace/theme/solarized_dark',
     }
