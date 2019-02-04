@@ -121,17 +121,25 @@ module.exports = function(ssb, config, opts) {
   }
 }
 
-function renderBar(where) {
-  return h('.bar', [
-    h('select', {
-      'ev-change': e => {
-        where.set(e.target.value)
+function renderBar(whereObs) {
+  function tab(title, where) {
+    return h('div.tre-multieditor-tab', {
+      classList: computed(whereObs, w => w == where ? ['active'] : []),
+      attributes: {
+        'data-where': where
+      }
+    }, title)
+  }
+  return h('.tre-multieditor-bar', [
+    h('tre-multieditor-bar', {
+      'ev-click': e => {
+        whereObs.set(e.target.getAttribute('data-where'))
       }
     }, [
-      h('option', 'stage'),
-      h('option', { selected: true },'editor'),
-      h('option', 'json-editor'),
-      h('option', 'thumbnail')
+      tab('Preview', 'stage'),
+      tab('Edit', 'editor'),
+      tab('JSON', 'json-editor'),
+      tab('Thumbnail', 'thumbnail')
     ])
   ])
 }
@@ -162,6 +170,17 @@ function styles() {
     }
     .tre-multieditor-mode.active {
       display: block;
+    }
+    .tre-multieditor-bar {
+      background: #333;
+    }
+    .tre-multieditor-tab {
+      display: inline-block;
+      background: #444;
+      padding: 2px 1em;
+    }
+    .tre-multieditor-tab.active {
+      background: #777;
     }
   `)
 }
