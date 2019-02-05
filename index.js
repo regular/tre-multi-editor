@@ -53,9 +53,34 @@ module.exports = function(ssb, opts) {
       ])
     ])
 
+    function raw() {
+      const includeProtos = Value(false)
+      const showPreview = Value(false)
+      const kvObs = computed(showPreview, preview => {
+        return preview ? previewObs : watchMerged(revisionRoot(kv))
+      })
+      return h('div', [
+        h('input', {
+          type: 'checkbox',
+          'ev-change': e=>{
+            includeProtos.set(e.target.checked)
+          }
+        }), h('span', 'include prototypes'), 
+        h('input', {
+          type: 'checkbox',
+          'ev-change': e=>{
+            showPreview.set(e.target.checked)
+          }
+        }), h('span', 'show draft'), 
+        computed([whereObs, kvObs, includeProtos, showPreview], (where, kv, protos, preview) => {
+          if (where !== 'raw') return []
+          const showKv = protos ? kv : unmergeKv(kv)
+          return h('pre', JSON.stringify(showKv, null, 2))
+        })
+      ])
+    }
+
     function stage() {
-      //const kvObs = watchHeads(revisionRoot(kv))
-      //const mergedKvObs = watchMerged(kvObs)
       return computed(whereObs, where => {
         if (where.includes('editor')) return []
         return renderSpecialized(kv, {where, previewObs})
@@ -64,8 +89,11 @@ module.exports = function(ssb, opts) {
 
     function shellOrStage() {
       return [
+        h('.tre-multieditor-mode.raw', {
+          classList: computed(whereObs, where => where == 'raw' ? ['active'] : []),
+        }, raw()),
         h('.tre-multieditor-mode.preview', {
-          classList: computed(whereObs, where => where.includes('editor') ? [] : ['active']),
+          classList: computed(whereObs, where => (where.includes('editor') || where == 'raw') ? [] : ['active']),
         }, stage()),
         h('.tre-multieditor-mode.shell', {
           classList: computed(whereObs, where => where.includes('editor') ? ['active'] : []),
@@ -139,6 +167,7 @@ function renderBar(whereObs) {
       tab('Preview', 'stage'),
       tab('Edit', 'editor'),
       tab('JSON', 'json-editor'),
+      tab('Raw', 'raw'),
       tab('Thumbnail', 'thumbnail')
     ])
   ])
@@ -178,6 +207,8 @@ function styles() {
       display: inline-block;
       background: #444;
       padding: 2px 1em;
+      margin: 2px 1px 0 1px;
+      border-radius: 4px 4px 0 0;
     }
     .tre-multieditor-tab.active {
       background: #777;
