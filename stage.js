@@ -81,8 +81,10 @@ module.exports = function(opts) {
         height: computed([height, stageScale], (h, s) => `${s * h}px`)
       }
     }, [
-      h('div', {
+      h('.tre-stage-zoom', {
         style: {
+          width: computed(width, w => `${w}px`),
+          height: computed(height, h => `${h}px`),
           zoom: computed(stageScale, s => `${s * 100}%`)
         }
       }, content)
