@@ -8,6 +8,7 @@ const h = require('mutant/html-element')
 const Value = require('mutant/value')
 const computed = require('mutant/computed')
 const setStyle = require('module-styles')('tre-multi-editor')
+const Stage = require('./stage')
 
 module.exports = function(ssb, opts) {
   opts = opts || {}
@@ -36,6 +37,8 @@ module.exports = function(ssb, opts) {
     ctx = ctx || {}
     const renderSpecialized = ctx.render
     if (!content(kv)) return
+
+    const renderStage = Stage()
 
     const whereObs = ctx.whereObs || Value(ctx.where || 'editor')
     const contentObs = Value(kv && unmergeKv(kv).value.content)
@@ -83,7 +86,9 @@ module.exports = function(ssb, opts) {
     function stage() {
       return computed(whereObs, where => {
         if (where.includes('editor')) return []
-        return renderSpecialized(kv, {where, previewObs})
+        return renderStage(
+          renderSpecialized(kv, {where, previewObs})
+        )
       })
     }
 
@@ -208,10 +213,24 @@ function styles() {
       background: #444;
       padding: 2px 1em;
       margin: 2px 1px 0 1px;
-      border-radius: 4px 4px 0 0;
     }
     .tre-multieditor-tab.active {
       background: #777;
+    }
+    .tre-stage {
+      background: green;
+      position: relative;
+    }
+    .tre-stage-view-options {
+      white-space: nowrap;
+    }
+    .tre-stage-view-options input[type=number] {
+      width: 4em;
+    }
+    .tre-stage-container {
+      overflow: auto;
+      max-width: 100%;
+      height: -webkit-fill-available;
     }
   `)
 }
