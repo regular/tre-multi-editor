@@ -42,9 +42,10 @@ module.exports = function(ssb, opts) {
 
     const whereObs = ctx.whereObs || Value(ctx.where || 'editor')
     const contentObs = Value(kv && unmergeKv(kv).value.content)
-    const previewObs = getPreviewObs(contentObs)
+    const previewObs = getPreviewObs(contentObs, {allowAllAuthors: true})
     const syntaxErrorObs = Value()
-  
+    const {currentLanguageObs, languagesObs} = ctx
+
     return h('.tre-multieditor', [
       makeSplitPane({horiz: true}, [
         makePane('60%', [
@@ -59,22 +60,30 @@ module.exports = function(ssb, opts) {
     function raw() {
       const includeProtos = Value(false)
       const showPreview = Value(false)
-      const kvObs = computed(showPreview, preview => {
-        return preview ? previewObs : watchMerged(revisionRoot(kv))
+      const allowAllAuthors = Value(true)
+      const kvObs = computed([showPreview, allowAllAuthors], (preview, allowAllAuthors) => {
+        return preview ?  
+          getPreviewObs(contentObs, {allowAllAuthors})
+          : watchMerged(revisionRoot(kv), {allowAllAuthors})
       })
+
+      function checkbox(obs, label) {
+        return h('.checkbox', [
+          h('input', {
+            checked: obs,
+            type: 'checkbox',
+            'ev-change': e=>{
+              obs.set(e.target.checked)
+            }
+          }),
+          h('span', label)
+        ])
+      }
+
       return h('div', [
-        h('input', {
-          type: 'checkbox',
-          'ev-change': e=>{
-            includeProtos.set(e.target.checked)
-          }
-        }), h('span', 'include prototypes'), 
-        h('input', {
-          type: 'checkbox',
-          'ev-change': e=>{
-            showPreview.set(e.target.checked)
-          }
-        }), h('span', 'show draft'), 
+        checkbox(includeProtos, 'include prototypes'), 
+        checkbox(showPreview, 'show draft'), 
+        checkbox(allowAllAuthors, 'allow all authors'), 
         computed([whereObs, kvObs, includeProtos, showPreview], (where, kv, protos, preview) => {
           if (where !== 'raw') return []
           const showKv = protos ? kv : unmergeKv(kv)
@@ -87,7 +96,12 @@ module.exports = function(ssb, opts) {
       return computed(whereObs, where => {
         if (where.includes('editor')) return []
         return renderStage(
-          renderSpecialized(kv, {where, previewObs})
+          renderSpecialized(kv, {
+            where,
+            previewObs,
+            currentLanguageObs,
+            languagesObs
+          })
         )
       })
     }
@@ -107,6 +121,10 @@ module.exports = function(ssb, opts) {
     }
 
     function renderSpecializedAndJsonEditors(kv, ctx) {
+      ctx = Object.assign({}, ctx, {
+        currentLanguageObs,
+        languagesObs
+      })
       return [
         h('.tre-multieditor-mode.specialized', {
           classList: computed(whereObs, where => where == 'json-editor' ? [] : ['active'])
@@ -126,6 +144,8 @@ module.exports = function(ssb, opts) {
         renderEditor: renderSpecializedAndJsonEditors,
         contentObs,
         previewObs,
+        currentLanguageObs,
+        languagesObs,
         syntaxErrorObs,
         where: 'editor'
       })
@@ -135,12 +155,15 @@ module.exports = function(ssb, opts) {
       return renderPropertySheet(kv, {
         disabled: computed(syntaxErrorObs, e => !!e),
         contentObs,
-        previewObs
+        previewObs,
+        currentLanguageObs,
+        languagesObs
       })
     }
   }
 
-  function getPreviewObs(contentObs) {
+  function getPreviewObs(contentObs, opts) {
+    opts = opts || {}
     const editing_kv = computed(contentObs, content => {
       if (!content) return null
       return {
@@ -150,7 +173,7 @@ module.exports = function(ssb, opts) {
         }
       }
     })
-    return watchMerged(editing_kv)
+    return watchMerged(editing_kv, opts)
   }
 }
 
