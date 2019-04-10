@@ -27,7 +27,7 @@ module.exports = function(ssb, opts) {
   const renderShell = Shell(ssb, {
     save: (kv, cb) => {
       ssb.publish(kv.value.content, (err, msg) => {
-        console.log('pyblish:', err, msg)
+        console.log('publish:', err, msg)
         cb(err, msg)
       })
     }
